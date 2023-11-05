@@ -35,21 +35,11 @@ class Client(Protocol, GUI.Interface):
             print("Something went wrong", file=stderr)
             return
         if data["type"] == "error":
-            print(data.get("value", "Unknown error"), file=stderr)
+            print(data.get("message", "Unknown error"), file=stderr)
         elif data["type"] == "new_registration":
-            if data["answer"] == "allow":
-                messagebox.showinfo(message="Вы успешно зарегистрировались")
-                self.registration_window.destroy()
-                self.authorize_widgets()
-            else:
-                messagebox.showinfo(message="Пользователь с таким логином уже заргистрирован")
+            self.registration(data)
         elif data["type"] == "authorize":
-            if data["answer"] == "wrong_login":
-                messagebox.showinfo(message="Пользователя с такм логином не существует")
-            elif data["answer"] == "wrong_password":
-                messagebox.showinfo(message="Неправильный пароль")
-            else:
-                self.chat_widgets()
+            self.authorize(data)
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
         if not self.close_with_x:
@@ -64,7 +54,6 @@ class Client(Protocol, GUI.Interface):
     #         self.send_data(value=input("value: "), type=input("type: "))
 
     '''BUTTON FUNCTIONS'''
-
     def new_registration_func(self):
         login = self.login_entry.get()
         password = self.password_entry.get()
@@ -74,6 +63,23 @@ class Client(Protocol, GUI.Interface):
         login = self.login_entry.get()
         password = self.password_entry.get()
         self.send_data(type="authorize", login=login, password=password)
+
+    '''REQUESTS'''
+    def registration(self, data):
+        if data["answer"] == "allow":
+            messagebox.showinfo(message="Вы успешно зарегистрировались")
+            self.registration_window.destroy()
+            self.authorize_widgets()
+        else:
+            messagebox.showinfo(message="Пользователь с таким логином уже заргистрирован")
+
+    def authorize(self, data):
+        if data["answer"] == "wrong_login":
+            messagebox.showinfo(message="Пользователя с такм логином не существует")
+        elif data["answer"] == "wrong_password":
+            messagebox.showinfo(message="Неправильный пароль")
+        else:
+            self.chat_widgets()
 
 
 class ClientFactory(ClFactory):

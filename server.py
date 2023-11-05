@@ -47,29 +47,9 @@ class Server(Protocol):
             return
         
         if data["type"] == "new_registration":
-            login = data["login"]
-            password = data["password"]
-            if login not in clients:
-                new_client = {login: password}
-                clients.update(new_client)
-                self.send_message(type="new_registration", answer="allow")
-                with open('clients.json', "w") as f:
-                    json.dump(clients, f, indent=4)
-            else:
-                self.send_message(type="new_registration", answer="forbid")
+            self.new_registration(data)
         elif data["type"] == "authorize":
-            login = data["login"]
-            password = data["password"]
-            if login not in clients:
-                self.send_message(type="authorize", answer="wrong_login")
-            elif password != clients[login]:
-                self.send_message(type="authorize", answer="wrong_password")
-            else:
-                '''сделать отправку data_to_send'''
-                self.login = login
-                print(f"Пользователь '{self.login}' авторизовался")
-                online_clients[self.login] = self
-                self.send_message(type="authorize", answer="allow")
+            self.authorize(data)
         
     def connectionLost(self, reason: failure.Failure = connectionDone):
 
@@ -78,6 +58,34 @@ class Server(Protocol):
             del online_clients[self.login]
         else:
             print(f"Неавторизованный пользователь {self} отключился")
+
+    '''REQUESTS'''
+
+    def new_registration(self, data):
+        login = data["login"]
+        password = data["password"]
+        if login not in clients:
+            new_client = {login: password}
+            clients.update(new_client)
+            self.send_message(type="new_registration", answer="allow")
+            with open('clients.json', "w") as f:
+                json.dump(clients, f, indent=4)
+        else:
+            self.send_message(type="new_registration", answer="forbid")
+
+    def authorize(self, data):
+        login = data["login"]
+        password = data["password"]
+        if login not in clients:
+            self.send_message(type="authorize", answer="wrong_login")
+        elif password != clients[login]:
+            self.send_message(type="authorize", answer="wrong_password")
+        else:
+            '''сделать отправку data_to_send'''
+            self.login = login
+            print(f"Пользователь '{self.login}' авторизовался")
+            online_clients[self.login] = self
+            self.send_message(type="authorize", answer="allow")
 
 
 class ServerFactory(ServFactory):
