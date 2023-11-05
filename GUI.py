@@ -57,7 +57,11 @@ class Interface:
         self.registration_button.pack()
 
     def chat_widgets(self):
+        self.authorize_window.destroy()
         self.chat_window = Frame(self.root)
+        self.root.title("Чаты")
+
+        self.chat_window.pack()
 
     '''BUTTON FUNCTIONS'''
     def enter_func(self):

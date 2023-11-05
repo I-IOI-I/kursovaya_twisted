@@ -1,9 +1,12 @@
 from twisted.internet import reactor, defer
-from twisted.internet.protocol import Protocol
-from twisted.internet.protocol import ClientFactory as ClFactory
+from twisted.internet.protocol import Protocol, connectionDone
+from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from sys import stderr
 import json
+
+from twisted.python import failure
+
 import GUI
 from tkinter import messagebox
 from twisted.internet import tksupport
@@ -12,13 +15,14 @@ from twisted.internet import tksupport
 class Client(Protocol, GUI.Interface):
 
     def connectionMade(self):
+        self.close_with_x = False
         self.run()
         self.root.protocol("WM_DELETE_WINDOW", self.stop_reactor_and_exit)
         tksupport.install(self.root, reactor=reactor)
 
     def stop_reactor_and_exit(self):
+        self.close_with_x = True
         reactor.stop()
-        self.root.destroy()
 
     @staticmethod
     def __encode_json(data):
@@ -39,22 +43,37 @@ class Client(Protocol, GUI.Interface):
                 self.authorize_widgets()
             else:
                 messagebox.showinfo(message="Пользователь с таким логином уже заргистрирован")
-        else:
-            print(data.get("value", "no value in the message"))
+        elif data["type"] == "authorize":
+            if data["answer"] == "wrong_login":
+                messagebox.showinfo(message="Пользователя с такм логином не существует")
+            elif data["answer"] == "wrong_password":
+                messagebox.showinfo(message="Неправильный пароль")
+            else:
+                self.chat_widgets()
+
+    def connectionLost(self, reason: failure.Failure = connectionDone):
+        if not self.close_with_x:
+            messagebox.showerror("ERROR", message="Соединение потеряно")
+            self.stop_reactor_and_exit()
 
     def send_data(self, **kwargs):
         self.transport.write(self.__encode_json(kwargs).encode("utf-8"))
 
-    def message_input(self):
-        while True:
-            self.send_data(value=input("value: "), type=input("type: "))
+    # def message_input(self):
+    #     while True:
+    #         self.send_data(value=input("value: "), type=input("type: "))
 
-    '''INTERFACE'''
+    '''BUTTON FUNCTIONS'''
 
     def new_registration_func(self):
         login = self.login_entry.get()
         password = self.password_entry.get()
         self.send_data(type="new_registration", login=login,  password=password)
+
+    def enter_func(self):
+        login = self.login_entry.get()
+        password = self.password_entry.get()
+        self.send_data(type="authorize", login=login, password=password)
 
 
 class ClientFactory(ClFactory):
@@ -62,6 +81,7 @@ class ClientFactory(ClFactory):
         return Client()
 
     def clientConnectionLost(self, connector, unused_reason):
+        print(unused_reason)
         pass
 
     def clientConnectionFailed(self, connector, reason):
@@ -70,13 +90,12 @@ class ClientFactory(ClFactory):
 
 
 def handle_error(failure):
-    print(f"Ошибка подключения: {failure.getErrorMessage()}")
-    messagebox.showerror("ERROR", message="Ошибка подключения")
+    messagebox.showerror(message="Ошибка подключения к серверу", title="ERROR")
     reactor.stop()
 
 
 if __name__ == '__main__':
-    endpoint = TCP4ClientEndpoint(reactor, "localhost", 12345)
+    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080)
     con = endpoint.connect(ClientFactory())
     con.addErrback(handle_error)
     reactor.run()

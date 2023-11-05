@@ -12,12 +12,18 @@ if not os.path.exists('clients.json'):
 else:
     with open('clients.json', "r") as f:
         clients = json.load(f)
+        
+if not os.path.exists("data_to_send"):
+    os.mkdir("data_to_send")
+
+online_clients = {}
 
 
 class Server(Protocol):
     def connectionMade(self):
-        pass
-
+        print(f"Неавторизовнный пользователь {self} подключился")
+        self.login = None
+        
     @staticmethod
     def __encode_json(**kwargs):
         return json.dumps(kwargs)
@@ -28,7 +34,6 @@ class Server(Protocol):
             del kwargs["receiver"]
             receiver.transport.write(self.__encode_json(**kwargs).encode("utf-8"))
         else:
-            print(kwargs)
             self.transport.write(self.__encode_json(**kwargs).encode("utf-8"))
 
     def dataReceived(self, data):
@@ -40,33 +45,39 @@ class Server(Protocol):
         except json.JSONDecodeError:
             self.send_message(message="Cannot decode, use json", type="error")
             return
-        # if not self.name:
-        #     self.add_user(data)
-        #     return
-        if not data.get("type"):
-            self.send_message(message="Wrong data", type="error")
-        elif data["type"] == "new_registration":
+        
+        if data["type"] == "new_registration":
             login = data["login"]
             password = data["password"]
             if login not in clients:
-                new_client = {login: {"password": password,
-                                "protocol": f"{self}",
-                                "need_to_send": ""
-                                      }}
+                new_client = {login: password}
                 clients.update(new_client)
                 self.send_message(type="new_registration", answer="allow")
                 with open('clients.json', "w") as f:
                     json.dump(clients, f, indent=4)
             else:
                 self.send_message(type="new_registration", answer="forbid")
-
-    def disconnect(self):
-        "сделать офлайн статус"
-        print("Пользователь отлючился")
-
+        elif data["type"] == "authorize":
+            login = data["login"]
+            password = data["password"]
+            if login not in clients:
+                self.send_message(type="authorize", answer="wrong_login")
+            elif password != clients[login]:
+                self.send_message(type="authorize", answer="wrong_password")
+            else:
+                '''сделать отправку data_to_send'''
+                self.login = login
+                print(f"Пользователь '{self.login}' авторизовался")
+                online_clients[self.login] = self
+                self.send_message(type="authorize", answer="allow")
+        
     def connectionLost(self, reason: failure.Failure = connectionDone):
-        print("Соединение с пользователем потеряно")
-        self.disconnect()
+
+        if self.login:
+            print(f"Соединение с пользователем '{self.login}' потеряно")
+            del online_clients[self.login]
+        else:
+            print(f"Неавторизованный пользователь {self} отключился")
 
 
 class ServerFactory(ServFactory):
@@ -78,6 +89,6 @@ class ServerFactory(ServFactory):
 
 
 if __name__ == '__main__':
-    endpoint = TCP4ServerEndpoint(reactor, 12345)
+    endpoint = TCP4ServerEndpoint(reactor, 8080)
     endpoint.listen(ServerFactory())
     reactor.run()
