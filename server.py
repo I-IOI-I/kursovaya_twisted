@@ -28,7 +28,7 @@ class Server(Protocol):
     def __encode_json(**kwargs):
         return json.dumps(kwargs)
 
-    def send_message(self, **kwargs):
+    def send_data(self, **kwargs):
         if kwargs.get("receiver"):
             receiver = kwargs["receiver"]
             del kwargs["receiver"]
@@ -40,16 +40,18 @@ class Server(Protocol):
         try:
             data = json.loads(data.decode("utf-8"))
         except UnicodeDecodeError:
-            self.send_message(message="Cannot decode, use utf-8", type="error")
+            self.send_data(message="Cannot decode, use utf-8", type="error")
             return
         except json.JSONDecodeError:
-            self.send_message(message="Cannot decode, use json", type="error")
+            self.send_data(message="Cannot decode, use json", type="error")
             return
         
         if data["type"] == "new_registration":
             self.new_registration(data)
         elif data["type"] == "authorize":
             self.authorize(data)
+        elif data["type"] == "find_client":
+            self.find_client(data)
         
     def connectionLost(self, reason: failure.Failure = connectionDone):
 
@@ -67,25 +69,32 @@ class Server(Protocol):
         if login not in clients:
             new_client = {login: password}
             clients.update(new_client)
-            self.send_message(type="new_registration", answer="allow")
+            self.send_data(type="new_registration", answer="allow")
             with open('clients.json', "w") as f:
                 json.dump(clients, f, indent=4)
         else:
-            self.send_message(type="new_registration", answer="forbid")
+            self.send_data(type="new_registration", answer="forbid")
 
     def authorize(self, data):
         login = data["login"]
         password = data["password"]
         if login not in clients:
-            self.send_message(type="authorize", answer="wrong_login")
+            self.send_data(type="authorize", answer="wrong_login")
         elif password != clients[login]:
-            self.send_message(type="authorize", answer="wrong_password")
+            self.send_data(type="authorize", answer="wrong_password")
         else:
             '''сделать отправку data_to_send'''
             self.login = login
             print(f"Пользователь '{self.login}' авторизовался")
             online_clients[self.login] = self
-            self.send_message(type="authorize", answer="allow")
+            self.send_data(type="authorize", answer="allow", login=login)
+
+    def find_client(self, data):
+        client = data["client"]
+        if client not in clients:
+            self.send_data(type="find_client", answer=False)
+        else:
+            self.send_data(type="find_client", answer=True, client=client)
 
 
 class ServerFactory(ServFactory):
