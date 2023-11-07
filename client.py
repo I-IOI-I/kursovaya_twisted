@@ -6,6 +6,7 @@ from sys import stderr
 import json
 import tkinter as tk
 import os
+import datetime
 from time import sleep
 
 from twisted.python import failure
@@ -13,7 +14,6 @@ from twisted.python import failure
 import GUI
 from tkinter import messagebox
 from twisted.internet import tksupport
-
 
 
 class Client(Protocol, GUI.Interface):
@@ -76,7 +76,7 @@ class Client(Protocol, GUI.Interface):
 
     def open_chat_with_client(self, selected_client):
         self.chat_widgets()
-        self.another_client.config(text=selected_client)
+        self.another_client_label.config(text="Чат с пользователем " + selected_client)
         self.chat.config(state=tk.NORMAL)
         if not os.path.exists(f"{self.login}_chats"):
             os.mkdir(f"{self.login}_chats")
@@ -85,6 +85,20 @@ class Client(Protocol, GUI.Interface):
         with open(f"{self.login}_chats\\{selected_client}.txt", "r") as f:
             chat = f.read()
         self.chat.insert(tk.END, chat)
+
+    def send_message_button_command(self):
+        receiver = self.another_client
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        message = self.message_enter.get()
+        self.message_enter.delete(0, tk.END)
+        self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+
+    # def messenger_back_func(self):
+    #     self.close_with_x = True
+    #     self.transport.loseConnection()
+    #     reactor.stop()
+    #     self.root.destroy()
+    #     main()
 
     '''REQUESTS'''
     def registration(self, data):
@@ -105,9 +119,10 @@ class Client(Protocol, GUI.Interface):
             self.messenger_widgets()
 
     def find_client(self, data):
-        if data["answer"] == False:
+        if not data["answer"]:
             messagebox.showinfo(message="Такого пользователя не существует")
         else:
+            self.another_client = data ["client"]
             self.open_chat_with_client(data["client"])
 
 
@@ -129,8 +144,12 @@ def handle_error(failure):
     reactor.stop()
 
 
-if __name__ == '__main__':
+def main():
     endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080)
     con = endpoint.connect(ClientFactory())
     con.addErrback(handle_error)
     reactor.run()
+
+
+if __name__ == '__main__':
+    main()

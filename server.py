@@ -52,6 +52,9 @@ class Server(Protocol):
             self.authorize(data)
         elif data["type"] == "find_client":
             self.find_client(data)
+        elif data["type"] == "send_message":
+            pass
+            #принимаю self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
         
     def connectionLost(self, reason: failure.Failure = connectionDone):
 
