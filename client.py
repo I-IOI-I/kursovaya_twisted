@@ -82,6 +82,9 @@ class Client(Protocol, GUI.Interface):
             os.mkdir(f"{self.login}_chats")
             with open(f"{self.login}_chats\\{selected_client}.txt", "w"):
                 pass
+        if not os.path.exists(f"{self.login}_chats\\{selected_client}"):
+            with open(f"{self.login}_chats\\{selected_client}.txt", "w"):
+                pass
         with open(f"{self.login}_chats\\{selected_client}.txt", "r") as f:
             chat = f.read()
         self.chat.insert(tk.END, chat)
@@ -92,6 +95,7 @@ class Client(Protocol, GUI.Interface):
         message = self.message_enter.get()
         self.message_enter.delete(0, tk.END)
         self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+        # добавить сообщение в историю и вывести пользователя вверх в списке
 
     # def messenger_back_func(self):
     #     self.close_with_x = True

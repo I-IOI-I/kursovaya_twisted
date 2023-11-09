@@ -53,8 +53,7 @@ class Server(Protocol):
         elif data["type"] == "find_client":
             self.find_client(data)
         elif data["type"] == "send_message":
-            pass
-            #принимаю self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+            self.process_the_message(data)
         
     def connectionLost(self, reason: failure.Failure = connectionDone):
 
@@ -98,6 +97,15 @@ class Server(Protocol):
             self.send_data(type="find_client", answer=False)
         else:
             self.send_data(type="find_client", answer=True, client=client)
+
+    def process_the_message(self, data):
+        if data["receiver"] in online_clients:
+            self.send_data(data)
+        else:
+            del data["type"]
+            #добавить сообщение в data to send
+        # принимаю self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+        pass
 
 
 class ServerFactory(ServFactory):
