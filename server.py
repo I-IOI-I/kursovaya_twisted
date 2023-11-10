@@ -96,10 +96,11 @@ class Server(Protocol):
             with open(f"data_to_send\\{self.login}.csv", "r") as f:
                 reader = csv.DictReader(f, delimiter=",", lineterminator="\r")
                 for row in reader:
+                    print(row)
                     self.send_data(type=row["type"], sender=row["sender"], receiver=row["receiver"],date=row["date"], message=row["message"])
             with open(f"data_to_send\\{self.login}.csv", "w") as f:
                 writer = csv.writer(f)
-                headers = ["type", "sender", "receiver","date", "message"]
+                headers = ["type", "sender", "receiver", "date", "message"]
                 writer.writerow(headers)
 
     def find_client(self, data):

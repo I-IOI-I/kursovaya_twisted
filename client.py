@@ -100,20 +100,23 @@ class Client(Protocol, GUI.Interface):
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = self.message_enter.get()
         self.message_enter.delete(0, tk.END)
-        self.save_message(sender=self.login, receiver=self.another_client, date=date, message=message)
+        self.save_message(from_myself=True, sender=self.login, receiver=self.another_client, date=date, message=message)
         if receiver != self.login:
             self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
             #вывести пользователя вверх в списке
 
-    def save_message(self, **data):
-        receiver = data["receiver"]
+    def save_message(self, from_myself=False, **data):
+        if from_myself:
+            sender = data["receiver"]
+        else:
+            sender = data["sender"]
         del data["receiver"]
-        if not os.path.exists(f"{self.login}_chats\\{receiver}.csv"):
-            with open(f"{self.login}_chats\\{receiver}.csv", "w") as f:
+        if not os.path.exists(f"{self.login}_chats\\{sender}.csv"):
+            with open(f"{self.login}_chats\\{sender}.csv", "w") as f:
                 writer = csv.writer(f)
                 headers = ["sender", "date", "message"]
                 writer.writerow(headers)
-        with open(f"{self.login}_chats\\{receiver}.csv", "a") as f:
+        with open(f"{self.login}_chats\\{sender}.csv", "a") as f:
             file_writer = csv.writer(f, delimiter=",", lineterminator="\r")
             row = [v for i, v in data.items()]
             file_writer.writerow(row)
@@ -147,6 +150,7 @@ class Client(Protocol, GUI.Interface):
             if not os.path.exists(f"{self.login}_chats"):
                 os.mkdir(f"{self.login}_chats")
             self.messenger_widgets()
+            self.root.title(f"Мессенджер {self.login}")
 
     def find_client(self, data):
         if not data["answer"]:
