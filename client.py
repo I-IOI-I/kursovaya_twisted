@@ -105,7 +105,8 @@ class Client(Protocol, GUI.Interface):
     def save_message(self, **data):
         with open(f"{self.login}_chats\\{self.another_client}.csv", "a") as f:
             file_writer = csv.writer(f, delimiter=",", lineterminator="\r")
-            file_writer.writerow([data["sender"], data["date"], data["message"]])
+            row = [v for i, v in data.items()]
+            file_writer.writerow(row)
 
 
 

@@ -5,6 +5,7 @@ from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.python import failure
 import json
 import os
+import csv
 
 
 if not os.path.exists('clients.json'):
@@ -56,7 +57,6 @@ class Server(Protocol):
             self.process_the_message(data)
         
     def connectionLost(self, reason: failure.Failure = connectionDone):
-
         if self.login:
             print(f"Соединение с пользователем '{self.login}' потеряно")
             del online_clients[self.login]
@@ -85,11 +85,16 @@ class Server(Protocol):
         elif password != clients[login]:
             self.send_data(type="authorize", answer="wrong_password")
         else:
-            '''сделать отправку data_to_send'''
+            #сделать отправку data_to_send
             self.login = login
             print(f"Пользователь '{self.login}' авторизовался")
             online_clients[self.login] = self
             self.send_data(type="authorize", answer="allow", login=login)
+            if os.path.exists(f"data_to_send\\{self.login}.csv"):
+                with open(f"data_to_send\\{self.login}.csv", "r") as f:
+                    reader = csv.DictReader(f, delimiter=",", lineterminator="\r")
+                    for row in reader:
+                        self.send_data(type=row["type"], sender=row["sender"], date=row["date"], message=row["message"])
 
     def find_client(self, data):
         client = data["client"]
@@ -102,10 +107,16 @@ class Server(Protocol):
         if data["receiver"] in online_clients:
             self.send_data(**data)
         else:
-            del data["type"]
-            #добавить сообщение в data to send
-        # принимаю self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
-        pass
+            if not os.path.exists(f"data_to_send\\{data['receiver']}.csv"):
+                with open(f"data_to_send\\{data['receiver']}.csv", "w") as f:
+                    writer = csv.writer(f)
+                    headers = ["type", "sender", "date", "message"]
+                    writer.writerow(headers)
+            with open(f"data_to_send\\{data['receiver']}.csv", "a") as f:
+                del data["receiver"]
+                writer = csv.writer(f, delimiter=",", lineterminator="\r")
+                row = [v for i, v in data.items()]
+                writer.writerow(row)
 
 
 class ServerFactory(ServFactory):
