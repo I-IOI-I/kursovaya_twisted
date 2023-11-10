@@ -32,7 +32,6 @@ class Server(Protocol):
     def send_data(self, **kwargs):
         if kwargs.get("receiver"):
             receiver = online_clients[kwargs["receiver"]]
-            del kwargs["receiver"]
             receiver.transport.write(self.__encode_json(**kwargs).encode("utf-8"))
         else:
             self.transport.write(self.__encode_json(**kwargs).encode("utf-8"))
@@ -74,6 +73,11 @@ class Server(Protocol):
             self.send_data(type="new_registration", answer="allow")
             with open('clients.json', "w") as f:
                 json.dump(clients, f, indent=4)
+            if not os.path.exists(f"data_to_send\\{login}.csv"):
+                with open(f"data_to_send\\{login}.csv", "w") as f:
+                    writer = csv.writer(f)
+                    headers = ["type", "sender", "receiver", "date", "message"]
+                    writer.writerow(headers)
         else:
             self.send_data(type="new_registration", answer="forbid")
 
@@ -85,16 +89,18 @@ class Server(Protocol):
         elif password != clients[login]:
             self.send_data(type="authorize", answer="wrong_password")
         else:
-            #сделать отправку data_to_send
             self.login = login
             print(f"Пользователь '{self.login}' авторизовался")
             online_clients[self.login] = self
             self.send_data(type="authorize", answer="allow", login=login)
-            if os.path.exists(f"data_to_send\\{self.login}.csv"):
-                with open(f"data_to_send\\{self.login}.csv", "r") as f:
-                    reader = csv.DictReader(f, delimiter=",", lineterminator="\r")
-                    for row in reader:
-                        self.send_data(type=row["type"], sender=row["sender"], date=row["date"], message=row["message"])
+            with open(f"data_to_send\\{self.login}.csv", "r") as f:
+                reader = csv.DictReader(f, delimiter=",", lineterminator="\r")
+                for row in reader:
+                    self.send_data(type=row["type"], sender=row["sender"], receiver=row["receiver"],date=row["date"], message=row["message"])
+            with open(f"data_to_send\\{self.login}.csv", "w") as f:
+                writer = csv.writer(f)
+                headers = ["type", "sender", "receiver","date", "message"]
+                writer.writerow(headers)
 
     def find_client(self, data):
         client = data["client"]
@@ -107,13 +113,7 @@ class Server(Protocol):
         if data["receiver"] in online_clients:
             self.send_data(**data)
         else:
-            if not os.path.exists(f"data_to_send\\{data['receiver']}.csv"):
-                with open(f"data_to_send\\{data['receiver']}.csv", "w") as f:
-                    writer = csv.writer(f)
-                    headers = ["type", "sender", "date", "message"]
-                    writer.writerow(headers)
             with open(f"data_to_send\\{data['receiver']}.csv", "a") as f:
-                del data["receiver"]
                 writer = csv.writer(f, delimiter=",", lineterminator="\r")
                 row = [v for i, v in data.items()]
                 writer.writerow(row)

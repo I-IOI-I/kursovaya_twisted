@@ -51,9 +51,9 @@ class Client(Protocol, GUI.Interface):
                 self.authorize(data)
             elif data["type"] == "find_client":
                 self.find_client(data)
-            elif ["type"] == "new_message":
-                pass
-                #если другой пользователь то добавить в диалог и если открыт чат то вывести в чат
+            elif data["type"] == "send_message":
+                del data["type"]
+                self.save_message(**data)
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
         if not self.close_with_x:
@@ -86,8 +86,6 @@ class Client(Protocol, GUI.Interface):
         self.chat_widgets()
         self.another_client_label.config(text="Чат с пользователем " + selected_client)
         self.chat.config(state=tk.NORMAL)
-        if not os.path.exists(f"{self.login}_chats"):
-            os.mkdir(f"{self.login}_chats")
         if not os.path.exists(f"{self.login}_chats\\{selected_client}"):
             with open(f"{self.login}_chats\\{selected_client}.csv", "w") as f:
                 writer = csv.writer(f)
@@ -102,12 +100,20 @@ class Client(Protocol, GUI.Interface):
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = self.message_enter.get()
         self.message_enter.delete(0, tk.END)
-        self.save_message(sender=self.login, date=date, message=message)
-        self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
-        # добавить сообщение в историю и вывести пользователя вверх в списке
+        self.save_message(sender=self.login, receiver=self.another_client, date=date, message=message)
+        if receiver != self.login:
+            self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+            #вывести пользователя вверх в списке
 
     def save_message(self, **data):
-        with open(f"{self.login}_chats\\{self.another_client}.csv", "a") as f:
+        receiver = data["receiver"]
+        del data["receiver"]
+        if not os.path.exists(f"{self.login}_chats\\{receiver}.csv"):
+            with open(f"{self.login}_chats\\{receiver}.csv", "w") as f:
+                writer = csv.writer(f)
+                headers = ["sender", "date", "message"]
+                writer.writerow(headers)
+        with open(f"{self.login}_chats\\{receiver}.csv", "a") as f:
             file_writer = csv.writer(f, delimiter=",", lineterminator="\r")
             row = [v for i, v in data.items()]
             file_writer.writerow(row)
@@ -138,6 +144,8 @@ class Client(Protocol, GUI.Interface):
             messagebox.showinfo(message="Неправильный пароль")
         else:
             self.login = data["login"]
+            if not os.path.exists(f"{self.login}_chats"):
+                os.mkdir(f"{self.login}_chats")
             self.messenger_widgets()
 
     def find_client(self, data):
