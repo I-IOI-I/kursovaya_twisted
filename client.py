@@ -86,9 +86,9 @@ class Client(Protocol, GUI.Interface):
         self.chat_widgets()
         self.another_client_label.config(text="Чат с пользователем " + selected_client)
         self.chat.config(state=tk.NORMAL)
-        if not os.path.exists(f"{self.login}_chats\\{selected_client}"):
+        if not os.path.exists(f"{self.login}_chats\\{selected_client}.csv"):
             with open(f"{self.login}_chats\\{selected_client}.csv", "w") as f:
-                writer = csv.writer(f)
+                writer = csv.writer(f, delimiter=",", lineterminator="\r")
                 headers = ["sender", "date", "message"]
                 writer.writerow(headers)
         # with open(f"{self.login}_chats\\{selected_client}.csv", "r") as f:
@@ -100,7 +100,7 @@ class Client(Protocol, GUI.Interface):
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = self.message_enter.get()
         self.message_enter.delete(0, tk.END)
-        self.save_message(from_myself=True, sender=self.login, receiver=self.another_client, date=date, message=message)
+        self.save_message(from_myself=True, sender=self.login, receiver=receiver, date=date, message=message)
         if receiver != self.login:
             self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
             #вывести пользователя вверх в списке
@@ -113,7 +113,7 @@ class Client(Protocol, GUI.Interface):
         del data["receiver"]
         if not os.path.exists(f"{self.login}_chats\\{sender}.csv"):
             with open(f"{self.login}_chats\\{sender}.csv", "w") as f:
-                writer = csv.writer(f)
+                writer = csv.writer(f, delimiter=",", lineterminator="\r")
                 headers = ["sender", "date", "message"]
                 writer.writerow(headers)
         with open(f"{self.login}_chats\\{sender}.csv", "a") as f:
