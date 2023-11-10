@@ -30,7 +30,7 @@ class Server(Protocol):
 
     def send_data(self, **kwargs):
         if kwargs.get("receiver"):
-            receiver = kwargs["receiver"]
+            receiver = online_clients[kwargs["receiver"]]
             del kwargs["receiver"]
             receiver.transport.write(self.__encode_json(**kwargs).encode("utf-8"))
         else:
@@ -100,7 +100,7 @@ class Server(Protocol):
 
     def process_the_message(self, data):
         if data["receiver"] in online_clients:
-            self.send_data(data)
+            self.send_data(**data)
         else:
             del data["type"]
             #добавить сообщение в data to send
