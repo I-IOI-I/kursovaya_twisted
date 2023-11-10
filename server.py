@@ -27,7 +27,7 @@ class Server(Protocol):
         
     @staticmethod
     def __encode_json(**kwargs):
-        return json.dumps(kwargs)
+        return json.dumps(kwargs) + "\n"
 
     def send_data(self, **kwargs):
         if kwargs.get("receiver"):

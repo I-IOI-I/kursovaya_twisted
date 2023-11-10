@@ -34,22 +34,26 @@ class Client(Protocol, GUI.Interface):
         return json.dumps(data)
 
     def dataReceived(self, data):
-        try:
-            data = json.loads(data.decode("utf-8"))
-        except UnicodeDecodeError or json.JSONDecodeError:
-            print("Something went wrong", file=stderr)
-            return
-        if data["type"] == "error":
-            print(data.get("message", "Unknown error"), file=stderr)
-        elif data["type"] == "new_registration":
-            self.registration(data)
-        elif data["type"] == "authorize":
-            self.authorize(data)
-        elif data["type"] == "find_client":
-            self.find_client(data)
-        elif ["type"] == "new_message":
-            pass
-            #если другой пользователь то добавить в диалог и если открыт чат то вывести в чат
+        _data = data.decode("utf-8").split("\n")
+        for data in _data:
+            if data == "":
+                continue
+            try:
+                data = json.loads(data)
+            except UnicodeDecodeError or json.JSONDecodeError:
+                print("Something went wrong", file=stderr)
+                return
+            if data["type"] == "error":
+                print(data.get("message", "Unknown error"), file=stderr)
+            elif data["type"] == "new_registration":
+                self.registration(data)
+            elif data["type"] == "authorize":
+                self.authorize(data)
+            elif data["type"] == "find_client":
+                self.find_client(data)
+            elif ["type"] == "new_message":
+                pass
+                #если другой пользователь то добавить в диалог и если открыт чат то вывести в чат
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
         if not self.close_with_x:
