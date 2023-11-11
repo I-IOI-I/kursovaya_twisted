@@ -65,7 +65,7 @@ class Interface:
         #     self.messenger_window.config(width=event.width, height=event.height)
         #
         # self.root.bind("<Configure>", on_resize)
-
+        self.root.bind("<Delete>", self.delete_from_recent_clients)
         self.authorize_window.destroy()
         self.messenger_window = Frame(self.root)
         self.root.title("Мессенджер")
@@ -74,11 +74,13 @@ class Interface:
         self.choose_client = Frame(self.messenger_window)
         # self.messenger_back_button = Button(self.messenger_window, text="Назад", font=30,
         #                                        command=self.messenger_back_func)
-        self.chat_frame = Frame(self.messenger_window)
         self.find_client_entry = Entry(self.choose_client, font=("", 20))
         self.find_client_button = Button(self.choose_client, text="Найти", font=("", 10), command=self.find_client_button_command)
 
         self.recent_clients = Listbox(self.choose_client)
+        scrollbar_recent_clients = Scrollbar(self.recent_clients, orient=VERTICAL, command=self.recent_clients.yview)
+        scrollbar_recent_clients.pack(side=RIGHT, fill=Y)
+        self.recent_clients.config(yscrollcommand=scrollbar_recent_clients.set)
         self.recent_clients.bind("<<ListboxSelect>>", self.select_from_listbox)
         self.recent_clients.yview_scroll(number=1, what="units")
 
@@ -91,16 +93,16 @@ class Interface:
         self.find_client_button.pack()
         Label(self.choose_client, text="Недавние чаты:", font=("", 10)).pack()
         self.recent_clients.pack(fill=BOTH, expand=True)
-
-
         # self.messenger_back_button.place(anchor=NE, relx=0.95)
 
     def chat_widgets(self):
+        self.chat_frame = Frame(self.messenger_window)
         self.another_client_label = Label(self.chat_frame, font=("", 10))
-        self.chat = Text(self.chat_frame, state=DISABLED, wrap=WORD)
+        self.chat = Frame(self.chat_frame)
         self.message_enter = Entry(self.chat_frame, font=("", 20), justify=RIGHT)
         self.message_send_button = Button(self.chat_frame, text="Отправить", font=("", 10),
                                           command=self.send_message_button_command)
+        self.message_enter.bind('<Return>', self.send_message_button_command)
         self.attach_a_file_button = Button(self.chat_frame, text="Прикрепить\nфайл", font=("", 10),
                                            command=self.attach_a_file_button_command)
 
@@ -136,10 +138,13 @@ class Interface:
         self.registration_window.destroy()
         self.authorize_widgets()
 
-    def send_message_button_command(self):
+    def send_message_button_command(self, event):
         raise NotImplementedError()
 
     def attach_a_file_button_command(self):
+        raise NotImplementedError()
+
+    def delete_from_recent_clients(self, event):
         raise NotImplementedError()
 
     # def messenger_back_func(self):

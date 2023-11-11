@@ -68,6 +68,11 @@ class Client(Protocol, GUI.Interface):
     #         self.send_data(value=input("value: "), type=input("type: "))
 
     '''BUTTON FUNCTIONS'''
+    def delete_from_recent_clients(self, event):
+        selected_index = self.recent_clients.curselection()
+        if selected_index:
+            self.recent_clients.delete(selected_index)
+
     def new_registration_func(self):
         login = self.login_entry.get()
         password = self.password_entry.get()
@@ -85,26 +90,27 @@ class Client(Protocol, GUI.Interface):
     def open_chat_with_client(self, selected_client):
         self.another_client = selected_client
         self.chat_widgets()
-        self.another_client_label.config(text="Чат с пользователем " + selected_client)
-        self.chat.config(state=tk.NORMAL)
+        self.another_client_label.config(text="Чат с пользователем " + self.another_client)
         if not os.path.exists(f"{self.login}_chats\\{selected_client}.csv"):
             with open(f"{self.login}_chats\\{selected_client}.csv", "w") as f:
                 writer = csv.writer(f, delimiter=",", lineterminator="\r")
                 headers = ["sender", "date", "message"]
                 writer.writerow(headers)
-        # with open(f"{self.login}_chats\\{selected_client}.csv", "r") as f:
-        #     chat = f.read()
-        # self.chat.insert(tk.END, chat)
+        #with open(f"{self.login}_chats\\{selected_client}.csv", "r") as f:
+        #     file_reader = csv.DictReader(f, delimiter = ",")
+        #     for message in file_reader:
+        #         tk.Label(self.chat, text=).pack()
 
-    def send_message_button_command(self):
+    def send_message_button_command(self, event=False):
+        message = self.message_enter.get()
+        if not message:
+            return
         receiver = self.another_client
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = self.message_enter.get()
         self.message_enter.delete(0, tk.END)
         self.save_message(from_myself=True, sender=self.login, receiver=receiver, date=date, message=message)
         if receiver != self.login:
             self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
-            #вывести пользователя вверх в списке
 
     def save_message(self, from_myself=False, **data):
         if from_myself:
@@ -121,7 +127,8 @@ class Client(Protocol, GUI.Interface):
             file_writer = csv.writer(f, delimiter=",", lineterminator="\r")
             row = [v for i, v in data.items()]
             file_writer.writerow(row)
-        self.raise_the_client_in_listbox(sender)
+        if self.recent_clients.get(0) != sender:
+            self.raise_the_client_in_listbox(sender)
 
     def raise_the_client_in_listbox(self, client):
         if client in self.recent_clients.get(0, tk.END):
@@ -130,7 +137,6 @@ class Client(Protocol, GUI.Interface):
         values = self.recent_clients.get(0, tk.END)
         with open(f"{self.login}_recent_clients.txt", "w") as f:
             for i in values:
-                print(i)
                 f.write(i + "\n")
 
     # def messenger_back_func(self):
@@ -176,8 +182,6 @@ class Client(Protocol, GUI.Interface):
             recent_clients_list = [line.rstrip("\n") for line in f]
             self.recent_clients_list_var = tk.StringVar(value=recent_clients_list)
             self.recent_clients.config(listvariable=self.recent_clients_list_var)
-
-
 
 
 class ClientFactory(ClFactory):
