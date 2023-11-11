@@ -83,6 +83,7 @@ class Client(Protocol, GUI.Interface):
         self.send_data(type="find_client", client=client)
 
     def open_chat_with_client(self, selected_client):
+        self.another_client = selected_client
         self.chat_widgets()
         self.another_client_label.config(text="Чат с пользователем " + selected_client)
         self.chat.config(state=tk.NORMAL)
@@ -120,9 +121,17 @@ class Client(Protocol, GUI.Interface):
             file_writer = csv.writer(f, delimiter=",", lineterminator="\r")
             row = [v for i, v in data.items()]
             file_writer.writerow(row)
+        self.raise_the_client_in_listbox(sender)
 
-
-
+    def raise_the_client_in_listbox(self, client):
+        if client in self.recent_clients.get(0, tk.END):
+            self.recent_clients.delete(self.recent_clients.get(0, tk.END).index(client))
+        self.recent_clients.insert(0, client)
+        values = self.recent_clients.get(0, tk.END)
+        with open(f"{self.login}_recent_clients.txt", "w") as f:
+            for i in values:
+                print(i)
+                f.write(i + "\n")
 
     # def messenger_back_func(self):
     #     self.close_with_x = True
@@ -151,13 +160,24 @@ class Client(Protocol, GUI.Interface):
                 os.mkdir(f"{self.login}_chats")
             self.messenger_widgets()
             self.root.title(f"Мессенджер {self.login}")
+            self.fill_recent_clients_listbox()
 
     def find_client(self, data):
         if not data["answer"]:
             messagebox.showinfo(message="Такого пользователя не существует")
         else:
-            self.another_client = data ["client"]
             self.open_chat_with_client(data["client"])
+
+    def fill_recent_clients_listbox(self):
+        if not os.path.exists(f"{self.login}_recent_clients.txt"):
+            with open(f"{self.login}_recent_clients.txt", "w"):
+                pass
+        with open(f"{self.login}_recent_clients.txt", "r") as f:
+            recent_clients_list = [line.rstrip("\n") for line in f]
+            self.recent_clients_list_var = tk.StringVar(value=recent_clients_list)
+            self.recent_clients.config(listvariable=self.recent_clients_list_var)
+
+
 
 
 class ClientFactory(ClFactory):

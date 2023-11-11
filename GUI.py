@@ -125,7 +125,8 @@ class Interface:
         raise NotImplementedError()
 
     def select_from_listbox(self, event):
-        selected_client = self.recent_clients.curselection()
+        selected_index = self.recent_clients.curselection()
+        selected_client = self.recent_clients.get(selected_index)
         self.open_chat_with_client(selected_client)
 
     def open_chat_with_client(self, selected_client):
