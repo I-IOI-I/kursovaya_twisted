@@ -159,6 +159,7 @@ class Client(Protocol, GUI.Interface):
             file_reader = csv.DictReader(f, delimiter=",")
             for message in file_reader:
                 self.pack_message(message)
+        self.canvas.yview_moveto(1.0)
 
     def save_message(self, from_myself=False, **data):
         if from_myself:
@@ -198,8 +199,9 @@ class Client(Protocol, GUI.Interface):
         else:
             tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, anchor=tk.W).pack(
                 anchor=tk.W)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", anchor=tk.W).pack(anchor=tk.W,
-                                                                                                         pady=5)
+            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", anchor=tk.W).pack(anchor=tk.W, pady=5)
+        self.canvas.yview_moveto(1)
+
 
 class ClientFactory(ClFactory):
     def buildProtocol(self, addr):

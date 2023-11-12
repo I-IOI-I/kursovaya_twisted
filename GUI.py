@@ -69,7 +69,7 @@ class Interface:
         self.authorize_window.destroy()
         self.messenger_window = Frame(self.root)
         self.root.title("Мессенджер")
-        self.root.geometry("900x500")
+        self.root.geometry("1000x600")
 
         self.choose_client = Frame(self.messenger_window)
         # self.messenger_back_button = Button(self.messenger_window, text="Назад", font=30,
@@ -96,20 +96,60 @@ class Interface:
         # self.messenger_back_button.place(anchor=NE, relx=0.95)
 
     def chat_widgets(self):
+        def on_frame_configure(event):
+            # При изменении размера фрейма, обновляем область прокрутки канваса
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+        def on_canvas_configure(event):
+            # При изменении размера канваса, изменяем размер окна внутри канваса
+            canvas_width = event.width
+            self.canvas.itemconfig(self.canvas_frame_id, width=canvas_width)
+
+        def on_mouse_wheel(event):
+            # Определение направления прокрутки колеса мыши
+            delta = 1 if event.delta < 0 else -1
+            # Прокрутка скроллбара
+            self.canvas.yview_scroll(delta, "units")
+
+        def on_canvas_enter(event):
+            # Привязываем прокрутку колесика мыши при входе в canvas
+            self.canvas.bind_all("<MouseWheel>", on_mouse_wheel)
+
+        def on_canvas_leave(event):
+            # Отвязываем прокрутку колесика мыши при выходе из canvas
+            self.canvas.unbind_all("<MouseWheel>")
+
         self.chat_frame = Frame(self.messenger_window, padx=10)
-        self.chat = LabelFrame(self.chat_frame, font=("", 10), labelanchor=N)
-        self.message_enter = Entry(self.chat_frame, font=("", 20), justify=RIGHT)
-        self.message_send_button = Button(self.chat_frame, text="Отправить", font=("", 10),
+
+        scrollbar_frame = Frame(self.chat_frame)
+        self.canvas = Canvas(scrollbar_frame)
+        scrollbar = Scrollbar(scrollbar_frame, orient="vertical", command=self.canvas.yview)
+        self.chat = LabelFrame(self.canvas, font=("", 10), labelanchor=N)
+        self.canvas_frame_id = self.canvas.create_window((0, 0), window=self.chat, anchor="nw")
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+
+
+        self.enter_message_frame = Frame(self.messenger_window, padx=10)
+        self.message_enter = Entry(self.enter_message_frame, font=("", 20), justify=RIGHT)
+        self.message_send_button = Button(self.enter_message_frame, text="Отправить", font=("", 10),
                                           command=self.send_message_button_command)
         self.message_enter.bind('<Return>', self.send_message_button_command)
-        self.attach_a_file_button = Button(self.chat_frame, text="Прикрепить\nфайл", font=("", 10),
+        self.attach_a_file_button = Button(self.enter_message_frame, text="Прикрепить\nфайл", font=("", 10),
                                            command=self.attach_a_file_button_command)
 
-        self.chat_frame.place(relx=0.2, relwidth=0.8, relheight=1)
-        self.chat.place(relwidth=1, relheight=1)
-        self.attach_a_file_button.place(relwidth=0.1, relheight=0.1, rely=0.9)
-        self.message_enter.place(relwidth=0.8, relheight=0.1, rely=0.9, relx=0.1)
-        self.message_send_button.place(relwidth=0.1, relheight=0.1, rely=0.9, relx=0.9)
+        self.chat_frame.place(relwidth=0.8, relheight=0.9, relx=0.2)
+        scrollbar_frame.pack(side="left", fill="both", expand=True)
+        self.canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        self.chat.bind("<Configure>", on_frame_configure)
+        self.canvas.bind("<Configure>", on_canvas_configure)
+        self.canvas.bind("<Enter>", on_canvas_enter)
+        self.canvas.bind("<Leave>", on_canvas_leave)
+
+        self.enter_message_frame.place(relwidth=0.8, relheight=0.1, rely=0.9, relx=0.2)
+        self.attach_a_file_button.place(relwidth=0.1, relheight=1)
+        self.message_enter.place(relwidth=0.8, relheight=1, relx=0.1)
+        self.message_send_button.place(relwidth=0.1, relheight=1, relx=0.9)
 
     '''BUTTON FUNCTIONS'''
     def enter_func(self):
