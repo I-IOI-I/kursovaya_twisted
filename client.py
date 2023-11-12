@@ -159,7 +159,6 @@ class Client(Protocol, GUI.Interface):
             file_reader = csv.DictReader(f, delimiter=",")
             for message in file_reader:
                 self.pack_message(message)
-        self.canvas.yview_moveto(1.0)
 
     def save_message(self, from_myself=False, **data):
         if from_myself:
@@ -222,7 +221,7 @@ def handle_error(failure):
 
 
 def main():
-    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080)
+    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080) # Тут менять IP
     con = endpoint.connect(ClientFactory())
     con.addErrback(handle_error)
     reactor.run()
