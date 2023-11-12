@@ -96,9 +96,8 @@ class Interface:
         # self.messenger_back_button.place(anchor=NE, relx=0.95)
 
     def chat_widgets(self):
-        self.chat_frame = Frame(self.messenger_window)
-        self.another_client_label = Label(self.chat_frame, font=("", 10))
-        self.chat = Frame(self.chat_frame)
+        self.chat_frame = Frame(self.messenger_window, padx=10)
+        self.chat = LabelFrame(self.chat_frame, font=("", 10), labelanchor=N)
         self.message_enter = Entry(self.chat_frame, font=("", 20), justify=RIGHT)
         self.message_send_button = Button(self.chat_frame, text="Отправить", font=("", 10),
                                           command=self.send_message_button_command)
@@ -107,8 +106,7 @@ class Interface:
                                            command=self.attach_a_file_button_command)
 
         self.chat_frame.place(relx=0.2, relwidth=0.8, relheight=1)
-        self.another_client_label.place(relheight=0.1, relx=0.4)
-        self.chat.place(relwidth=1, relheight=0.9, rely=0.1)
+        self.chat.place(relwidth=1, relheight=1)
         self.attach_a_file_button.place(relwidth=0.1, relheight=0.1, rely=0.9)
         self.message_enter.place(relwidth=0.8, relheight=0.1, rely=0.9, relx=0.1)
         self.message_send_button.place(relwidth=0.1, relheight=0.1, rely=0.9, relx=0.9)

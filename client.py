@@ -149,7 +149,7 @@ class Client(Protocol, GUI.Interface):
     def open_chat_with_client(self, selected_client):
         self.another_client = selected_client
         self.chat_widgets()
-        self.another_client_label.config(text="Чат с пользователем " + self.another_client)
+        self.chat.config(text="Чат с пользователем " + self.another_client)
         if not os.path.exists(f"{self.login}_chats\\{selected_client}.csv"):
             with open(f"{self.login}_chats\\{selected_client}.csv", "w") as f:
                 writer = csv.writer(f, delimiter=",", lineterminator="\r")
