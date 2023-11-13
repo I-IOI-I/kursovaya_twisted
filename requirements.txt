@@ -1,0 +1,12 @@
+attrs==23.1.0
+Automat==22.10.0
+constantly==23.10.4
+hyperlink==21.0.0
+idna==3.4
+incremental==22.10.0
+setuptools==68.2.2
+six==1.16.0
+Twisted==23.10.0
+twisted-iocpsupport==1.0.4
+typing_extensions==4.8.0
+zope.interface==6.1
