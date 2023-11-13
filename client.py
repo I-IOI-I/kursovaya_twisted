@@ -7,7 +7,6 @@ import json
 import tkinter as tk
 import os
 import datetime
-from time import sleep
 import csv
 
 from twisted.python import failure
@@ -69,7 +68,6 @@ class Client(Protocol, GUI.Interface):
     #         self.send_data(value=input("value: "), type=input("type: "))
 
 
-
     '''BUTTON FUNCTIONS'''
     def delete_from_recent_clients(self, event):
         selected_index = self.recent_clients.curselection()
@@ -89,7 +87,6 @@ class Client(Protocol, GUI.Interface):
     def find_client_button_command(self):
         client = self.find_client_entry.get()
         self.send_data(type="find_client", client=client)
-
 
     def send_message_button_command(self, event=False):
         message = self.message_enter.get()
@@ -136,6 +133,7 @@ class Client(Protocol, GUI.Interface):
             messagebox.showinfo(message="Такого пользователя не существует")
         else:
             self.open_chat_with_client(data["client"])
+
     '''OTHER'''
     def fill_recent_clients_listbox(self):
         if not os.path.exists(f"{self.login}_recent_clients.txt"):
@@ -191,16 +189,15 @@ class Client(Protocol, GUI.Interface):
 
     def pack_message(self, message):
         if message["sender"] == self.login:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, anchor=tk.E).pack(
+            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
                 anchor=tk.E)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#b0ffff", anchor=tk.E).pack(anchor=tk.E,
+            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#b0ffff", justify=tk.LEFT).pack(anchor=tk.E,
                                                                                                          pady=5)
         else:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, anchor=tk.W).pack(
+            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
                 anchor=tk.W)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", anchor=tk.W).pack(anchor=tk.W, pady=5)
+            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", justify=tk.LEFT).pack(anchor=tk.W, pady=5)
         self.canvas.yview_moveto(1)
-
 
 class ClientFactory(ClFactory):
     def buildProtocol(self, addr):

@@ -107,7 +107,7 @@ class Interface:
 
         def on_mouse_wheel(event):
             # Определение направления прокрутки колеса мыши
-            delta = 1 if event.delta < 0 else -1
+            delta = 2 if event.delta < 0 else -2
             # Прокрутка скроллбара
             self.canvas.yview_scroll(delta, "units")
 
