@@ -7,6 +7,8 @@ incremental==22.10.0
 setuptools==68.2.2
 six==1.16.0
 Twisted==23.10.0
-twisted-iocpsupport==1.0.4
+# twisted-iocpsupport==1.0.4 # проблемная либа
 typing_extensions==4.8.0
 zope.interface==6.1
+black
+isort

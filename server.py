@@ -1,19 +1,24 @@
-from twisted.internet import reactor
-from twisted.internet.protocol import Protocol, connectionDone
-from twisted.internet.protocol import ServerFactory as ServFactory
-from twisted.internet.endpoints import TCP4ServerEndpoint
-from twisted.python import failure
-import json
-import os
 import csv
+import json
+import logging
+import os
+
+from twisted.internet import reactor
+from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.internet.protocol import Protocol
+from twisted.internet.protocol import ServerFactory as ServFactory
+from twisted.internet.protocol import connectionDone
+from twisted.python import failure
+
+logging.basicConfig(level=logging.DEBUG)
 
 
-if not os.path.exists('clients.json'):
+if not os.path.exists("clients.json"):
     clients = {}
 else:
-    with open('clients.json', "r") as f:
+    with open("clients.json", "r") as f:
         clients = json.load(f)
-        
+
 if not os.path.exists("data_to_send"):
     os.mkdir("data_to_send")
 
@@ -24,7 +29,7 @@ class Server(Protocol):
     def connectionMade(self):
         print(f"Неавторизовнный пользователь {self} подключился")
         self.login = None
-        
+
     @staticmethod
     def __encode_json(**kwargs):
         return json.dumps(kwargs) + "\n"
@@ -45,7 +50,7 @@ class Server(Protocol):
         except json.JSONDecodeError:
             self.send_data(message="Cannot decode, use json", type="error")
             return
-        
+
         if data["type"] == "new_registration":
             self.new_registration(data)
         elif data["type"] == "authorize":
@@ -54,7 +59,7 @@ class Server(Protocol):
             self.find_client(data)
         elif data["type"] == "send_message":
             self.process_the_message(data)
-        
+
     def connectionLost(self, reason: failure.Failure = connectionDone):
         if self.login:
             print(f"Соединение с пользователем '{self.login}' потеряно")
@@ -62,7 +67,7 @@ class Server(Protocol):
         else:
             print(f"Неавторизованный пользователь {self} отключился")
 
-    '''REQUESTS'''
+    """REQUESTS"""
 
     def new_registration(self, data):
         login = data["login"]
@@ -71,7 +76,7 @@ class Server(Protocol):
             new_client = {login: password}
             clients.update(new_client)
             self.send_data(type="new_registration", answer="allow")
-            with open('clients.json', "w") as f:
+            with open("clients.json", "w") as f:
                 json.dump(clients, f, indent=4)
             if not os.path.exists(f"data_to_send\\{login}.csv"):
                 with open(f"data_to_send\\{login}.csv", "w") as f:
@@ -96,7 +101,13 @@ class Server(Protocol):
             with open(f"data_to_send\\{self.login}.csv", "r") as f:
                 reader = csv.DictReader(f, delimiter=",", lineterminator="\r")
                 for row in reader:
-                    self.send_data(type=row["type"], sender=row["sender"], receiver=row["receiver"],date=row["date"], message=row["message"])
+                    self.send_data(
+                        type=row["type"],
+                        sender=row["sender"],
+                        receiver=row["receiver"],
+                        date=row["date"],
+                        message=row["message"],
+                    )
             with open(f"data_to_send\\{self.login}.csv", "w") as f:
                 writer = csv.writer(f)
                 headers = ["type", "sender", "receiver", "date", "message"]
@@ -127,7 +138,17 @@ class ServerFactory(ServFactory):
         return Server()
 
 
-if __name__ == '__main__':
-    endpoint = TCP4ServerEndpoint(reactor, 8080)
-    endpoint.listen(ServerFactory())
-    reactor.run()
+class ServerRunner:
+    def __init__(self, port: int):
+        self.endpoint = TCP4ServerEndpoint(reactor, port)
+
+    def perform(self) -> None:
+        logging.debug("ServerRunner is performing")
+
+        self.endpoint.listen(ServerFactory())
+        reactor.run()
+
+
+if __name__ == "__main__":
+    instance = ServerRunner(8080)
+    instance.perform()
