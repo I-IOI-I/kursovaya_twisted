@@ -1,25 +1,33 @@
 from tkinter import *
 from tkinter.ttk import Combobox, Scrollbar, Treeview
+import tkinter as tk
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Interface:
-    
-    def run(self):
-        self.root = Tk()
+    def __init__(self):
+        self._root = Tk()
+
+    def perform(self) -> None:
+        logging.debug('Interface is performing')
+        logging.basicConfig(level=logging.DEBUG)
+
         self.authorize_widgets()
+        self._root.mainloop()
 
     def authorize_widgets(self):
-        self.root.geometry("600x400+400+100")
-        self.root.title("Авторизация")
-        self.authorize_window = Frame(self.root)
-
+        self._root.geometry("600x400+400+100")
+        self._root.title("Авторизация")
+        self.authorize_window = Frame(self._root)
 
         self.top_frame = Frame(self.authorize_window)
         self.bottom_frame = Frame(self.authorize_window)
 
-
         self.login_button = Button(self.bottom_frame, text="Войти", font=30, command=self.enter_func)
-        self.registration_button = Button(self.bottom_frame, text="Регистрация", font=30, command=self.registration_func)
+        self.registration_button = Button(self.bottom_frame, text="Регистрация", font=30,
+                                          command=self.registration_func)
 
         self.login_entry = Entry(self.top_frame)
         self.password_entry = Entry(self.top_frame)
@@ -36,8 +44,8 @@ class Interface:
 
     def registration_widgets(self):
         self.authorize_window.destroy()
-        self.root.title("Регистрация")
-        self.registration_window = Frame(self.root)
+        self._root.title("Регистрация")
+        self.registration_window = Frame(self._root)
         self.top_frame = Frame(self.registration_window)
         self.bottom_frame = Frame(self.registration_window)
 
@@ -45,7 +53,7 @@ class Interface:
                                           command=self.new_registration_func)
 
         self.registration_back_button = Button(self.top_frame, text="Назад", font=30,
-                                          command=self.registration_back_func)
+                                               command=self.registration_back_func)
 
         self.login_entry = Entry(self.top_frame)
         self.password_entry = Entry(self.top_frame)
@@ -64,18 +72,19 @@ class Interface:
         # def on_resize(event):
         #     self.messenger_window.config(width=event.width, height=event.height)
         #
-        # self.root.bind("<Configure>", on_resize)
-        self.root.bind("<Delete>", self.delete_from_recent_clients)
+        # self._root.bind("<Configure>", on_resize)
+        self._root.bind("<Delete>", self.delete_from_recent_clients)
         self.authorize_window.destroy()
-        self.messenger_window = Frame(self.root)
-        self.root.title("Мессенджер")
-        self.root.geometry("1000x600")
+        self.messenger_window = Frame(self._root)
+        self._root.title("Мессенджер")
+        self._root.geometry("1000x600")
 
         self.choose_client = Frame(self.messenger_window)
         # self.messenger_back_button = Button(self.messenger_window, text="Назад", font=30,
         #                                        command=self.messenger_back_func)
         self.find_client_entry = Entry(self.choose_client, font=("", 20))
-        self.find_client_button = Button(self.choose_client, text="Найти", font=("", 10), command=self.find_client_button_command)
+        self.find_client_button = Button(self.choose_client, text="Найти", font=("", 10),
+                                         command=self.find_client_button_command)
 
         self.recent_clients = Listbox(self.choose_client)
         scrollbar_recent_clients = Scrollbar(self.recent_clients, orient=VERTICAL, command=self.recent_clients.yview)
@@ -83,8 +92,6 @@ class Interface:
         self.recent_clients.config(yscrollcommand=scrollbar_recent_clients.set)
         self.recent_clients.bind("<<ListboxSelect>>", self.select_from_listbox)
         self.recent_clients.yview_scroll(number=1, what="units")
-
-
 
         self.messenger_window.place(relwidth=1, relheight=1)
         self.choose_client.place(relwidth=0.20, relheight=1)
@@ -128,7 +135,6 @@ class Interface:
         self.canvas_frame_id = self.canvas.create_window((0, 0), window=self.chat, anchor="nw")
         self.canvas.configure(yscrollcommand=scrollbar.set)
 
-
         self.enter_message_frame = Frame(self.messenger_window, padx=10)
         self.message_enter = Entry(self.enter_message_frame, font=("", 20), justify=RIGHT)
         self.message_send_button = Button(self.enter_message_frame, text="Отправить", font=("", 10),
@@ -152,6 +158,7 @@ class Interface:
         self.message_send_button.place(relwidth=0.1, relheight=1, relx=0.9)
 
     '''BUTTON FUNCTIONS'''
+
     def enter_func(self):
         raise NotImplementedError()
 
@@ -187,5 +194,3 @@ class Interface:
 
     # def messenger_back_func(self):
     #     raise NotImplementedError()
-
-

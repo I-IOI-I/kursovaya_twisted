@@ -6,6 +6,9 @@ from twisted.python import failure
 import json
 import os
 import csv
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 if not os.path.exists('clients.json'):
@@ -127,7 +130,17 @@ class ServerFactory(ServFactory):
         return Server()
 
 
+class ServerRunner:
+    def __init__(self, port: int):
+        self.endpoint = TCP4ServerEndpoint(reactor, port)
+
+    def perform(self) -> None:
+        logging.debug('ServerRunner is performing')
+
+        self.endpoint.listen(ServerFactory())
+        reactor.run()
+
+
 if __name__ == '__main__':
-    endpoint = TCP4ServerEndpoint(reactor, 8080)
-    endpoint.listen(ServerFactory())
-    reactor.run()
+    instance = ServerRunner(8080)
+    instance.perform()

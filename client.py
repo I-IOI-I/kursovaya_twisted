@@ -1,3 +1,5 @@
+from typing import Any
+
 from twisted.internet import reactor, defer
 from twisted.internet.protocol import Protocol, connectionDone
 from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
@@ -11,16 +13,19 @@ import csv
 
 from twisted.python import failure
 
-import GUI
+import gui
 from tkinter import messagebox
 from twisted.internet import tksupport
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
-class Client(Protocol, GUI.Interface):
+class Client(Protocol, gui.Interface):
 
     def connectionMade(self):
         self.close_with_x = False
-        self.run()
+        self.perform()
         self.root.protocol("WM_DELETE_WINDOW", self.stop_reactor_and_exit)
         tksupport.install(self.root, reactor=reactor)
         self.another_client = None
@@ -199,6 +204,7 @@ class Client(Protocol, GUI.Interface):
             tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", justify=tk.LEFT).pack(anchor=tk.W, pady=5)
         self.canvas.yview_moveto(1)
 
+
 class ClientFactory(ClFactory):
     def buildProtocol(self, addr):
         return Client()
@@ -212,17 +218,21 @@ class ClientFactory(ClFactory):
         pass
 
 
-def handle_error(failure):
-    messagebox.showerror(message="Ошибка подключения к серверу", title="ERROR")
-    reactor.stop()
+class ClientRunner:
+    def __init__(self, port: int):
+        endpoint = TCP4ClientEndpoint(reactor, "localhost", port) # Тут менять IP
+        self._connection = endpoint.connect(ClientFactory())
 
+    def _callback_method(self, failure: Any) -> None:
+        messagebox.showerror(message="Ошибка подключения к серверу", title="ERROR")
+        reactor.stop()
 
-def main():
-    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080) # Тут менять IP
-    con = endpoint.connect(ClientFactory())
-    con.addErrback(handle_error)
-    reactor.run()
+    def perform(self) -> None:
+        logging.debug('ClientRunner is performing')
+        self._connection.addErrback(self._callback_method)
+        reactor.run()
 
 
 if __name__ == '__main__':
-    main()
+    instance = ClientRunner(8080)
+    instance.perform()
