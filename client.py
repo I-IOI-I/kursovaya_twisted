@@ -1,28 +1,25 @@
+import csv
+import datetime
+import json
+import logging
+import os
+import tkinter as tk
+from sys import stderr
+from tkinter import messagebox
 from typing import Any
 
-from twisted.internet import reactor, defer
-from twisted.internet.protocol import Protocol, connectionDone
-from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
-from twisted.internet.endpoints import TCP4ClientEndpoint
-from sys import stderr
-import json
-import tkinter as tk
-import os
-import datetime
-import csv
-
-from twisted.python import failure
-
 import gui
-from tkinter import messagebox
-from twisted.internet import tksupport
-import logging
+from twisted.internet import defer, reactor, tksupport
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.protocol import Protocol
+from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
+from twisted.internet.protocol import connectionDone
+from twisted.python import failure
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class Client(Protocol, gui.Interface):
-
     def connectionMade(self):
         self.close_with_x = False
         self.perform()
@@ -72,8 +69,8 @@ class Client(Protocol, gui.Interface):
     #     while True:
     #         self.send_data(value=input("value: "), type=input("type: "))
 
+    """BUTTON FUNCTIONS"""
 
-    '''BUTTON FUNCTIONS'''
     def delete_from_recent_clients(self, event):
         selected_index = self.recent_clients.curselection()
         if selected_index:
@@ -82,7 +79,7 @@ class Client(Protocol, gui.Interface):
     def new_registration_func(self):
         login = self.login_entry.get()
         password = self.password_entry.get()
-        self.send_data(type="new_registration", login=login,  password=password)
+        self.send_data(type="new_registration", login=login, password=password)
 
     def enter_func(self):
         login = self.login_entry.get()
@@ -100,9 +97,21 @@ class Client(Protocol, gui.Interface):
         receiver = self.another_client
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.message_enter.delete(0, tk.END)
-        self.save_message(from_myself=True, sender=self.login, receiver=receiver, date=date, message=message)
+        self.save_message(
+            from_myself=True,
+            sender=self.login,
+            receiver=receiver,
+            date=date,
+            message=message,
+        )
         if receiver != self.login:
-            self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+            self.send_data(
+                type="send_message",
+                sender=self.login,
+                receiver=receiver,
+                date=date,
+                message=message,
+            )
 
     # def messenger_back_func(self):
     #     self.close_with_x = True
@@ -111,14 +120,17 @@ class Client(Protocol, gui.Interface):
     #     self.root.destroy()
     #     main()
 
-    '''REQUESTS'''
+    """REQUESTS"""
+
     def registration(self, data):
         if data["answer"] == "allow":
             messagebox.showinfo(message="Вы успешно зарегистрировались")
             self.registration_window.destroy()
             self.authorize_widgets()
         else:
-            messagebox.showinfo(message="Пользователь с таким логином уже заргистрирован")
+            messagebox.showinfo(
+                message="Пользователь с таким логином уже заргистрирован"
+            )
 
     def authorize(self, data):
         if data["answer"] == "wrong_login":
@@ -139,7 +151,8 @@ class Client(Protocol, gui.Interface):
         else:
             self.open_chat_with_client(data["client"])
 
-    '''OTHER'''
+    """OTHER"""
+
     def fill_recent_clients_listbox(self):
         if not os.path.exists(f"{self.login}_recent_clients.txt"):
             with open(f"{self.login}_recent_clients.txt", "w"):
@@ -194,14 +207,33 @@ class Client(Protocol, gui.Interface):
 
     def pack_message(self, message):
         if message["sender"] == self.login:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
-                anchor=tk.E)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#b0ffff", justify=tk.LEFT).pack(anchor=tk.E,
-                                                                                                         pady=5)
+            tk.Label(
+                self.chat,
+                text=f"{message['sender']} {message['date']}",
+                wraplength=450,
+                justify=tk.LEFT,
+            ).pack(anchor=tk.E)
+            tk.Label(
+                self.chat,
+                text=message["message"],
+                wraplength=450,
+                bg="#b0ffff",
+                justify=tk.LEFT,
+            ).pack(anchor=tk.E, pady=5)
         else:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
-                anchor=tk.W)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", justify=tk.LEFT).pack(anchor=tk.W, pady=5)
+            tk.Label(
+                self.chat,
+                text=f"{message['sender']} {message['date']}",
+                wraplength=450,
+                justify=tk.LEFT,
+            ).pack(anchor=tk.W)
+            tk.Label(
+                self.chat,
+                text=message["message"],
+                wraplength=450,
+                bg="#B5B8B1",
+                justify=tk.LEFT,
+            ).pack(anchor=tk.W, pady=5)
         self.canvas.yview_moveto(1)
 
 
@@ -220,7 +252,7 @@ class ClientFactory(ClFactory):
 
 class ClientRunner:
     def __init__(self, port: int):
-        endpoint = TCP4ClientEndpoint(reactor, "localhost", port) # Тут менять IP
+        endpoint = TCP4ClientEndpoint(reactor, "localhost", port)  # Тут менять IP
         self._connection = endpoint.connect(ClientFactory())
 
     def _callback_method(self, failure: Any) -> None:
@@ -228,11 +260,11 @@ class ClientRunner:
         reactor.stop()
 
     def perform(self) -> None:
-        logging.debug('ClientRunner is performing')
+        logging.debug("ClientRunner is performing")
         self._connection.addErrback(self._callback_method)
         reactor.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     instance = ClientRunner(8080)
     instance.perform()
