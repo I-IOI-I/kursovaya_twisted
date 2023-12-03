@@ -1,24 +1,25 @@
-from twisted.internet import reactor, defer
-from twisted.internet.protocol import Protocol, connectionDone
-from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
-from twisted.internet.endpoints import TCP4ClientEndpoint
-from sys import stderr
-import json
-import tkinter as tk
-import os
-import datetime
 import csv
+import datetime
+import json
+import os
+import tkinter as tk
+from sys import stderr
+from tkinter import messagebox
 
+from twisted.internet import defer, reactor, tksupport
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.protocol import Protocol
+from twisted.internet.protocol import ReconnectingClientFactory as ClFactory
+from twisted.internet.protocol import connectionDone
 from twisted.python import failure
 
 import GUI
-from tkinter import messagebox
-from twisted.internet import tksupport
 
 
 class Client(Protocol, GUI.Interface):
-
+    """Класс, представляющий клиентское приложение"""
     def connectionMade(self):
+        """Вызывается при установлении соединения с сервером"""
         self.close_with_x = False
         self.run()
         self.root.protocol("WM_DELETE_WINDOW", self.stop_reactor_and_exit)
@@ -26,14 +27,17 @@ class Client(Protocol, GUI.Interface):
         self.another_client = None
 
     def stop_reactor_and_exit(self):
+        """Останавливает реактор и выходит из приложения"""
         self.close_with_x = True
         reactor.stop()
 
     @staticmethod
     def __encode_json(data):
+        """Кодирует данные в формат JSON"""
         return json.dumps(data)
 
     def dataReceived(self, data):
+        """Вызывается при получении данных с сервера"""
         _data = data.decode("utf-8").split("\n")
         for data in _data:
             if data == "":
@@ -56,66 +60,79 @@ class Client(Protocol, GUI.Interface):
                 self.save_message(**data)
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
+        """Вызывается при потере соединения с сервером"""
         if not self.close_with_x:
             messagebox.showerror("ERROR", message="Соединение потеряно")
             self.stop_reactor_and_exit()
 
     def send_data(self, **kwargs):
+        """Отправляет заданные аргументы в виде данных на сервер"""
         self.transport.write(self.__encode_json(kwargs).encode("utf-8"))
 
-    # def message_input(self):
-    #     while True:
-    #         self.send_data(value=input("value: "), type=input("type: "))
+    """BUTTON FUNCTIONS"""
 
-
-    '''BUTTON FUNCTIONS'''
     def delete_from_recent_clients(self, event):
+        """Удаляет выбранного клиента из списка последних клиентов"""
         selected_index = self.recent_clients.curselection()
         if selected_index:
             self.recent_clients.delete(selected_index)
 
     def new_registration_func(self):
+        """Обрабатывает событие регистрации"""
         login = self.login_entry.get()
         password = self.password_entry.get()
-        self.send_data(type="new_registration", login=login,  password=password)
+        self.send_data(type="new_registration", login=login, password=password)
 
     def enter_func(self):
+        """Обрабатывает событие авторизации"""
         login = self.login_entry.get()
         password = self.password_entry.get()
         self.send_data(type="authorize", login=login, password=password)
 
     def find_client_button_command(self):
+        """Обрабатывает событие поиска клиента"""
         client = self.find_client_entry.get()
         self.send_data(type="find_client", client=client)
 
     def send_message_button_command(self, event=False):
+        """Обрабатывает событие нажатия кнопки отправки сообщения"""
         message = self.message_enter.get()
         if not message:
             return
         receiver = self.another_client
         date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.message_enter.delete(0, tk.END)
-        self.save_message(from_myself=True, sender=self.login, receiver=receiver, date=date, message=message)
+        self.save_message(
+            from_myself=True,
+            sender=self.login,
+            receiver=receiver,
+            date=date,
+            message=message,
+        )
         if receiver != self.login:
-            self.send_data(type="send_message", sender=self.login, receiver=receiver, date=date, message=message)
+            self.send_data(
+                type="send_message",
+                sender=self.login,
+                receiver=receiver,
+                date=date,
+                message=message,
+            )
 
-    # def messenger_back_func(self):
-    #     self.close_with_x = True
-    #     self.transport.loseConnection()
-    #     reactor.stop()
-    #     self.root.destroy()
-    #     main()
+    """RESPONES"""
 
-    '''REQUESTS'''
     def registration(self, data):
+        """Обрабатывает ответ сервера на регистрацию"""
         if data["answer"] == "allow":
             messagebox.showinfo(message="Вы успешно зарегистрировались")
             self.registration_window.destroy()
             self.authorize_widgets()
         else:
-            messagebox.showinfo(message="Пользователь с таким логином уже заргистрирован")
+            messagebox.showinfo(
+                message="Пользователь с таким логином уже заргистрирован"
+            )
 
     def authorize(self, data):
+        """Обрабатывает ответ сервера на авторизацию"""
         if data["answer"] == "wrong_login":
             messagebox.showinfo(message="Пользователя с такм логином не существует")
         elif data["answer"] == "wrong_password":
@@ -129,13 +146,16 @@ class Client(Protocol, GUI.Interface):
             self.fill_recent_clients_listbox()
 
     def find_client(self, data):
+        """Обрабатывает ответ сервера на поиска клиента"""
         if not data["answer"]:
             messagebox.showinfo(message="Такого пользователя не существует")
         else:
             self.open_chat_with_client(data["client"])
 
-    '''OTHER'''
+    """OTHER"""
+
     def fill_recent_clients_listbox(self):
+        """Заполняет поле списка недавних клиентов последними клиентами"""
         if not os.path.exists(f"{self.login}_recent_clients.txt"):
             with open(f"{self.login}_recent_clients.txt", "w"):
                 pass
@@ -145,6 +165,7 @@ class Client(Protocol, GUI.Interface):
             self.recent_clients.config(listvariable=self.recent_clients_list_var)
 
     def open_chat_with_client(self, selected_client):
+        """Открывает окно чата с выбранным клиентом"""
         self.another_client = selected_client
         self.chat_widgets()
         self.chat.config(text="Чат с пользователем " + self.another_client)
@@ -159,6 +180,7 @@ class Client(Protocol, GUI.Interface):
                 self.pack_message(message)
 
     def save_message(self, from_myself=False, **data):
+        """Сохраняет данные сообщения в файл чата"""
         if from_myself:
             sender = data["receiver"]
         else:
@@ -179,6 +201,7 @@ class Client(Protocol, GUI.Interface):
             self.pack_message(data)
 
     def raise_the_client_in_listbox(self, client):
+        """Поднимает клиента вверх в списке последних клиентов."""
         if client in self.recent_clients.get(0, tk.END):
             self.recent_clients.delete(self.recent_clients.get(0, tk.END).index(client))
         self.recent_clients.insert(0, client)
@@ -188,41 +211,59 @@ class Client(Protocol, GUI.Interface):
                 f.write(i + "\n")
 
     def pack_message(self, message):
+        """Помещает сообщение в окно чата."""
         if message["sender"] == self.login:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
-                anchor=tk.E)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#b0ffff", justify=tk.LEFT).pack(anchor=tk.E,
-                                                                                                         pady=5)
+            tk.Label(
+                self.chat,
+                text=f"{message['sender']} {message['date']}",
+                wraplength=450,
+                justify=tk.LEFT,
+            ).pack(anchor=tk.E)
+            tk.Label(
+                self.chat,
+                text=message["message"],
+                wraplength=450,
+                bg="#b0ffff",
+                justify=tk.LEFT,
+            ).pack(anchor=tk.E, pady=5)
         else:
-            tk.Label(self.chat, text=f"{message['sender']} {message['date']}", wraplength=450, justify=tk.LEFT).pack(
-                anchor=tk.W)
-            tk.Label(self.chat, text=message['message'], wraplength=450, bg="#B5B8B1", justify=tk.LEFT).pack(anchor=tk.W, pady=5)
+            tk.Label(
+                self.chat,
+                text=f"{message['sender']} {message['date']}",
+                wraplength=450,
+                justify=tk.LEFT,
+            ).pack(anchor=tk.W)
+            tk.Label(
+                self.chat,
+                text=message["message"],
+                wraplength=450,
+                bg="#B5B8B1",
+                justify=tk.LEFT,
+            ).pack(anchor=tk.W, pady=5)
         self.canvas.yview_moveto(1)
 
+
 class ClientFactory(ClFactory):
+    """Класс для создания экземпляров класса Client"""
     def buildProtocol(self, addr):
+        """Создает и возвращает экземпляр клиентского класса"""
         return Client()
-
-    def clientConnectionLost(self, connector, unused_reason):
-        print(unused_reason)
-        pass
-
-    def clientConnectionFailed(self, connector, reason):
-        print(reason)
-        pass
 
 
 def handle_error(failure):
+    """Обрабатывает ошибку, возникшую при подключении к серверу"""
     messagebox.showerror(message="Ошибка подключения к серверу", title="ERROR")
     reactor.stop()
 
 
 def main():
-    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080) # Тут менять IP
+    """Основная точка входа в программу
+    Создает конечную точку TCP-сервера, подключается к указанному порту и запускает реактор"""
+    endpoint = TCP4ClientEndpoint(reactor, "localhost", 8080)  # Тут менять IP
     con = endpoint.connect(ClientFactory())
     con.addErrback(handle_error)
     reactor.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
